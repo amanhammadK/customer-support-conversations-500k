@@ -1,0 +1,2 @@
+pandas\nyfinance\nfaker\nrequests\n
+pytest
