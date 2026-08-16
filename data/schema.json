@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Customer Support Conversations 500k",
+  "title": "Customer Support Conversations Dataset",
   "type": "array",
   "items": {
     "type": "object",

@@ -1,4 +1,4 @@
-# Customer Support Conversations — 500k
+# Customer Support Conversations Dataset
 
 A queryable dataset of synthetic customer-support conversations, shipped as JSON and exposed through a Model Context Protocol server with filtering, sorting, and stats tools.
 

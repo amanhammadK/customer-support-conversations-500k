@@ -1,2 +1,5 @@
-pandas\nyfinance\nfaker\nrequests\n
+pandas
+yfinance
+faker
+requests
 pytest

@@ -1,10 +1,25 @@
 import express from "express";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { server } from "./mcpServer.js";
+
 const app = express();
-const PORT = parseInt(process.env.PORT || "8080");
-let t;
-app.get("/sse", async (_, r) => { t = new SSEServerTransport("/message", r); await server.connect(t); });
-app.post("/message", async (req, res) => { if (t) await t.handlePostMessage(req, res); });
-app.get("/health", (_, r) => r.json({ status: "ok" }));
-app.listen(PORT, () => console.log("server running"));
+
+const PORT = parseInt(process.env.PORT || "8080", 10);
+let transport: SSEServerTransport | undefined;
+
+app.get("/sse", async (_, res) => {
+  transport = new SSEServerTransport("/message", res);
+  await server.connect(transport);
+});
+
+app.post("/message", async (req, res) => {
+  if (!transport) {
+    res.status(500).json({ error: "No active SSE connection. Connect to /sse first." });
+    return;
+  }
+  await transport.handlePostMessage(req, res);
+});
+
+app.get("/health", (_, res) => res.json({ status: "ok" }));
+
+app.listen(PORT, () => console.log(`MCP server listening on http://localhost:${PORT}/sse`));

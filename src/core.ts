@@ -5,9 +5,9 @@ import { dirname, join } from "path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_PATH = join(__dirname, "..", "data", "dataset.json");
 
-export interface Record { [key: string]: any; }
+export interface DataRecord { [key: string]: any; }
 
-function load(): Record[] {
+function load(): DataRecord[] {
   try {
     return JSON.parse(readFileSync(DATA_PATH, "utf-8"));
   } catch {
@@ -19,7 +19,7 @@ export interface QueryResult {
   total: number;
   returned: number;
   offset: number;
-  records: Record[];
+  records: DataRecord[];
 }
 
 type FilterValue = string | number | boolean | null | (string | number)[];
@@ -31,7 +31,7 @@ interface AdvancedFilter {
   value: any;
 }
 
-function matchFilter(record: Record, filter: AdvancedFilter): boolean {
+function matchFilter(record: DataRecord, filter: AdvancedFilter): boolean {
   const val = record[filter.field];
   const cmp = filter.value;
   switch (filter.op) {
@@ -53,7 +53,7 @@ function matchFilter(record: Record, filter: AdvancedFilter): boolean {
 }
 
 export async function query(
-  filters: Record | AdvancedFilter[] = {},
+  filters: DataRecord | AdvancedFilter[] = {},
   limit = 25,
   offset = 0,
   sortBy?: string,
@@ -93,12 +93,12 @@ export async function query(
   return { total, returned: records.length, offset, records };
 }
 
-export async function getRecord(idValue: string, idField = "id"): Promise<Record | null> {
+export async function getRecord(idValue: string, idField = "id"): Promise<DataRecord | null> {
   const rows = load();
   return rows.find((r) => String(r[idField]) === String(idValue)) ?? null;
 }
 
-function numericValues(rows: Record[], field: string): number[] {
+function numericValues(rows: DataRecord[], field: string): number[] {
   return rows.map((r) => r[field]).filter((v) => typeof v === "number" && !isNaN(v));
 }
 
@@ -189,17 +189,17 @@ export async function stats(fields?: string[]): Promise<Stats> {
 export async function aggregate(
   groupBy: string,
   aggregations: Record<string, "count" | "sum" | "avg" | "min" | "max" | "median">
-): Promise<Record[]> {
+): Promise<DataRecord[]> {
   const rows = load();
-  const groups: Record<string, Record[]> = {};
+  const groups: Record<string, DataRecord[]> = {};
   for (const r of rows) {
     const key = String(r[groupBy] ?? "null");
     if (!groups[key]) groups[key] = [];
     groups[key].push(r);
   }
-  const result: Record[] = [];
+  const result: DataRecord[] = [];
   for (const [key, group] of Object.entries(groups)) {
-    const row: Record = { [groupBy]: key, _count: group.length };
+    const row: DataRecord = { [groupBy]: key, _count: group.length };
     for (const [field, agg] of Object.entries(aggregations)) {
       const vals = numericValues(group, field);
       switch (agg) {
@@ -220,9 +220,10 @@ export async function timeSeries(
   timestampField: string,
   valueField: string,
   interval: "hour" | "day" | "week" | "month" = "day"
-): Promise<Record[]> {
+): Promise<DataRecord[]> {
   const rows = load();
   const grouped: Record<string, number[]> = {};
+  const entries = (Object.entries(grouped) as [string, number[]][]).sort(([a], [b]) => a.localeCompare(b));
   for (const r of rows) {
     const ts = r[timestampField];
     if (!ts) continue;
@@ -240,7 +241,7 @@ export async function timeSeries(
       grouped[key].push(val);
     }
   }
-  return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([period, vals]) => ({
+  return entries.map(([period, vals]) => ({
     period, count: vals.length, sum: Math.round(vals.reduce((a, b) => a + b, 0) * 100) / 100,
     avg: Math.round(mean(vals) * 100) / 100, min: Math.min(...vals), max: Math.max(...vals),
     stddev: Math.round(stddev(vals) * 100) / 100,
@@ -251,7 +252,7 @@ export async function movingAverage(
   timestampField: string,
   valueField: string,
   windowSize: number = 7
-): Promise<Record[]> {
+): Promise<DataRecord[]> {
   const ts = await timeSeries(timestampField, valueField, "day");
   return ts.map((point, idx) => {
     const start = Math.max(0, idx - windowSize + 1);
@@ -265,7 +266,7 @@ export async function detectAnomalies(
   field: string,
   method: "zscore" | "iqr" = "zscore",
   threshold: number = 2.5
-): Promise<{ anomalies: Record[]; total: number; anomalyCount: number; threshold: number }> {
+): Promise<{ anomalies: DataRecord[]; total: number; anomalyCount: number; threshold: number }> {
   const rows = load();
   const vals = numericValues(rows, field);
   if (vals.length < 10) return { anomalies: [], total: rows.length, anomalyCount: 0, threshold };
@@ -289,7 +290,7 @@ export async function detectAnomalies(
 export async function textSearch(
   query: string,
   fields?: string[]
-): Promise<{ total: number; records: Record[] }> {
+): Promise<{ total: number; records: DataRecord[] }> {
   const rows = load();
   const q = query.toLowerCase();
   const searchFields = fields || Object.keys(rows[0] || {});

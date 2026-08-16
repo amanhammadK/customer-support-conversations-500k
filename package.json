@@ -1,0 +1,28 @@
+{
+  "name": "customer-support-conversations-dataset",
+  "version": "1.0.0",
+  "description": "Queryable dataset of synthetic customer-support conversations with an MCP server for filtering, sorting, and stats.",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "validate": "tsx src/validate.ts"
+  },
+  "keywords": ["dataset", "customer-support", "mcp", "llm", "fine-tuning"],
+  "license": "FREE-USE",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "latest",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0",
+    "zod": "^3.23.8"
+  }
+}
